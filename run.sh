@@ -1,16 +1,27 @@
-# Store config file
-STOREFILE=ppl/default
+#!/bin/bash
 
-# Location of log directory
-LOGDIR=logs
+usage()
+{
+cat << EOF
+usage: $0 options
 
-# Specify a seed URI or you will be put into demo mode
-#SEED_URI=tcp://127.0.0.1:12345
-SEED_URI=
+This script starts up the OpenBazaar client and server.
 
-# Market Info
-MY_MARKET_IP=127.0.0.1
-MY_MARKET_PORT=12345
+OPTIONS:
+  -h    Help information
+  -o    Seed Mode
+  -i    Server IP
+  -p    Server Port
+  -l    Log file
+  -d    Development mode
+  -n    Number of Dev nodes to start up
+  -a    Bitmessage API username
+  -b    Bitmessage API password
+  -c    Bitmessage API port
+  -u    Market ID
+  -j    Disable upnp
+EOF
+}
 
 if which python2 2>/dev/null; then
     PYTHON=python2
@@ -18,31 +29,153 @@ else
     PYTHON=python
 fi
 
+# Default values
+SERVER_PORT=12345
+LOGDIR=logs
+DBDIR=db
+DBFILE=ob.db
+DEVELOPMENT=0
+SEED_URI='seed.openbazaar.org seed2.openbazaar.org'
+LOG_FILE=production.log
+DISABLE_UPNP=0
+
+# CRITICAL   50
+# ERROR      40
+# WARNING    30
+# INFO       20
+# DEBUG      10
+# NOTSET      0
+LOG_LEVEL=20
+
+NODES=3
+BM_USERNAME=brian
+BM_PASSWORD=P@ssw0rd
+BM_PORT=8442
+
+# Tor Information
+# - If you enable Tor here you will be operating a hidden
+#   service behind your Tor proxy (notional)
+TOR_ENABLE=0
+TOR_CONTROL_PORT=9051
+TOR_SERVER_PORT=9050
+TOR_COOKIE_AUTHN=1
+TOR_HASHED_CONTROL_PASSWORD=
+TOR_PROXY_IP=127.0.0.1
+TOR_PROXY_PORT=7000
+
+while getopts "hp:l:dn:a:b:c:u:oi:j" OPTION
+do
+     case ${OPTION} in
+         h)
+             usage
+             exit 1
+             ;;
+         p)
+             SERVER_PORT=$OPTARG
+             ;;
+         l)
+             LOG_FILE=$OPTARG
+             ;;
+         d)
+             DEVELOPMENT=1
+             ;;
+         n)
+             NODES=$OPTARG
+             ;;
+         a)
+             BM_USERNAME=$OPTARG
+             ;;
+         b)
+             BM_PASSWORD=$OPTARG
+             ;;
+         c)
+             BM_PORT=$OPTARG
+             ;;
+         u)
+             MARKET_ID=$OPTARG
+             ;;
+         o)
+             SEED_MODE=1
+             ;;
+         i)
+             SERVER_IP=$OPTARG
+             ;;
+         j)
+             DISABLE_UPNP=1
+             ;;
+         ?)
+             usage
+             exit
+             ;;
+     esac
+done
+
+if [ -z "$SERVER_IP" ]; then
+    SERVER_IP=$(wget -qO- icanhazip.com)
+fi
 
 if [ ! -d "$LOGDIR" ]; then
   mkdir $LOGDIR
 fi
-touch $LOGDIR/server.log
 
-if [[ -n "$SEED_URI" ]]; then
-	
-	$PYTHON node/tornadoloop.py $STOREFILE $MY_MARKET_IP $SEED_URI > $LOGDIR//server.log &
-	
-else
-
-	# Primary Market - No SEED_URI specified 
-	$PYTHON node/tornadoloop.py $STOREFILE $MY_MARKET_IP > $LOGDIR/server.log &
-	
-	# Demo Peer Market
-	sleep 1
-	touch $LOGDIR/demo_peer.log
-	$PYTHON node/tornadoloop.py $STOREFILE 127.0.0.2 tcp://$MY_MARKET_IP:$MY_MARKET_PORT > $LOGDIR//demo_peer.log &
-
+if [ ! -d "$DBDIR" ]; then
+  mkdir $DBDIR
 fi
 
-# TODO: Want to get rid of this
-# Open the browser if -q is not passed:
-if ! [ $1 = -q ]; then
-    xdg-open http://localhost:8888
-    xdg-open http://localhost:8889
+if [ "$DISABLE_UPNP" == 1 ]; then
+    echo "Disabling upnp"
+    DISABLE_UPNP="--disable_upnp"
+else
+    DISABLE_UPNP=""
+fi
+
+if [ "$SEED_MODE" == 1 ]; then
+    echo "Seed Mode $SERVER_IP"
+
+    if [ ! -f $DBDIR/$DBFILE ]; then
+       echo "File $DBFILE does not exist. Running setup script."
+       $PYTHON node/setup_db.py db/ob.db
+       wait
+    fi
+
+    $PYTHON node/tornadoloop.py $SERVER_IP -p $SERVER_PORT $DISABLE_UPNP -s 1 --bmuser $BM_USERNAME --bmpass $BM_PASSWORD --bmport $BM_PORT -l $LOGDIR/production.log -u 1 --log_level $LOG_LEVEL &
+
+elif [ "$DEVELOPMENT" == 0 ]; then
+    echo "Production Mode"
+
+    if [ ! -f $DBDIR/$DBFILE ]; then
+       echo "File $DBFILE does not exist. Running setup script."
+       export PYTHONPATH=$PYTHONPATH:`pwd`
+       $PYTHON node/setup_db.py db/ob.db
+       wait
+    fi
+
+	$PYTHON node/tornadoloop.py $SERVER_IP -p $SERVER_PORT $DISABLE_UPNP --bmuser $BM_USERNAME --bmpass $BM_PASSWORD --bmport $BM_PORT -S $SEED_URI -l $LOGDIR/production.log -u 1 --log_level $LOG_LEVEL &
+
+else
+	# Primary Market - No SEED_URI specified
+	echo "Development Mode"
+
+	if [ ! -f $DBDIR/ob-dev.db ]; then
+       echo "File $DBFILE does not exist. Running setup script."
+       export PYTHONPATH=$PYTHONPATH:`pwd`
+       $PYTHON node/setup_db.py db/ob-dev.db
+       wait
+    fi
+
+	$PYTHON node/tornadoloop.py 127.0.0.1 $DISABLE_UPNP --database db/ob-dev.db -s 1 --bmuser $BM_USERNAME -d --bmpass $BM_PASSWORD --bmport $BM_PORT -l $LOGDIR/development.log -u 1 --log_level $LOG_LEVEL &
+    ((NODES=NODES+1))
+    i=2
+    while [[ $i -le $NODES ]]
+    do
+        sleep 2
+        if [ ! -f db/ob-dev-$i.db ]; then
+           echo "File db/ob-dev-$i.db does not exist. Running setup script."
+           export PYTHONPATH=$PYTHONPATH:`pwd`
+           $PYTHON node/setup_db.py db/ob-dev-$i.db
+           wait
+        fi
+	    $PYTHON node/tornadoloop.py 127.0.0.$i $DISABLE_UPNP --database db/ob-dev-$i.db -d --bmuser $BM_USERNAME --bmpass $BM_PASSWORD --bmport $BM_PORT -S 127.0.0.1 -l $LOGDIR/development.log -u $i --log_level $LOG_LEVEL &
+	    ((i=i+1))
+    done
 fi

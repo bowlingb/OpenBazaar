@@ -1,0 +1,16 @@
+*.log
+db
+.DS_Store
+*.pyc
+.vagrant
+blockchain
+*.log
+.idea
+*.swp
+*.gpg
+gpg/random_seed
+*~
+*.log.*
+installers/ubuntu/*.deb
+installers/ubuntu/output/
+/html/backups/

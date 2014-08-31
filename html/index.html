@@ -1,264 +1,209 @@
-<html ng-app='app'>
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE html PUBLIC "-//WAPFORUM//DTD XHTML Mobile 1.0//EN" "http://www.wapforum.org/DTD/xhtml-mobile10.dtd">
+<html data-ng-app='app' xmlns="http://www.w3.org/1999/xhtml">
 <head>
-
+	<title>OpenBazaar - Decentralized markets for the masses</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    
     <script src="/html/vendors/angular.min.js" type="text/javascript"></script>
+    <script src="/html/bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
+    <script src="/html/bower_components/angular-route/angular-route.min.js"></script>
     <script src="/html/vendors/identicon.js" type="text/javascript"></script>
     <script src="/html/vendors/pnglib.js" type="text/javascript"></script>
     <script src="/html/vendors/jquery.min.js" type="text/javascript"></script>
     <script src="/html/vendors/bootstrap.min.js" type="text/javascript"></script>
+
+    <script src="/html/bower_components/jasny-bootstrap/dist/js/jasny-bootstrap.min.js"></script>
+    <!--<script src="/html/js/xlat.js"></script>-->
+    <script src="/html/js/notifier.js" type="text/javascript"></script>
+
     <script src="/html/js/ws.js" type="text/javascript"></script>
     <script src="/html/js/app.js" type="text/javascript"></script>
-    
-    <link href="/html/css/bootstrap.min.css" rel="stylesheet" type="text/css">
-    <link href="/html/css/dark.css" rel="stylesheet" type="text/css">
-    <link href="/html/less/css/app.css" rel="stylesheet" type="text/css">
+    <script src="/html/js/controllers.js" type="text/javascript"></script>
 
-    <title></title>
+    <!-- CSS -->
+    <link href="/html/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="/html/bower_components/jasny-bootstrap/dist/css/jasny-bootstrap.min.css" rel="stylesheet" media="screen" />
+    <link href="/html/css/dark.css" rel="stylesheet" type="text/css" />
+    <link href="/html/css/animate.css" rel="stylesheet" type="text/css" />
+    <link href="/html/less/css/app.css" rel="stylesheet" type="text/css" />
+    <link href="/html/css/messaging.css" rel="stylesheet" type="text/css" />
+
+    <link rel="icon" href="/html/favicon.ico" />
 </head>
 
-<body ng-controller="Market">
-    <div ng-show="warningMessage" class="alert alert-warning"></div>
 
-    <div class="container">
-        <!-- MOVE APP INSIDE THIS AREA -->
+<body data-ng-controller="Market as market" data-ng-init="">
 
-        <div class="site-wrapper" ng-show="!started">
-            <div class="site-wrapper-inner">
-                <div class="cover-container">
-                    <div class="masthead clearfix">
-                        <div class="inner">
-                            <h3 class="masthead-brand">OpenBazaar</h3>
 
-                            <ul class="nav masthead-nav">
-                                <li class="active"><a href="#">Home</a></li>
+<div data-ng-show="settings.welcome">
+    <div data-ng-controller="WelcomeModalCtrl">
+        <script type="text/ng-template" id="myModalContent.html">
 
-                                <li><a ng-click="started=true">Search</a></li>
+            <div class="modal-header">
+                <h3 class="modal-title">Welcome to OpenBazaar</h3>
+            </div>
 
-                                <li><a ng-click="started=true">Sell</a></li>
-                            </ul>
-                        </div>
+            <div class="modal-body"  style="text-align:left;">
+                <p style="font-size:110%">
+                    <div role="alert" class="alert alert-danger">
+                        <strong>Stop and read this. Your money and privacy are at risk.</strong>
                     </div>
 
-                    <div class="inner cover">
-                        <h1 class="cover-heading">OpenBazaar is a decentralized marketplace for the masses.</h1>
+                    OpenBazaar is in beta. What this means for you:
+                    <ul>
+                        <li>You are <strong>not anonymous at all</strong> on the OpenBazaar network. Your IP is tied to contracts you sell, buy, or notarize. Malicious parties could use this information against you; protecting your privacy is your own responsibility.</li>
+                        <li>Transactions may fail for technical reasons, and <strong>you can lose your bitcoins</strong>. In early beta we recommend smaller transactions and only using the bitcoin testnet. The OpenBazaar dev team is not responsible for any lost Bitcoin or product issues.</li>
+                        <li>The software functionality will change over time. This means that <strong>you may lose your product listings</strong> or settings when we roll out new releases.</li>
+                        <li>Proof-of-burn address format will change, and <strong>reputation pledges will be lost</strong>. Don't pledge too much on your stores yet!</li>
+                        <li>There will be bugs. Submit a bug report in the <a href="http://forum.openbazaar.org">forums</a> or on Reddit, and please be patient.</li>
+                    </ul>
 
-                        <p class="lead">Help us build a free and open marketplace for trade across borders.</p>
+                </p>
+            </div>
 
-                        <p class="lead"><a ng-show="!started" ng-click="started=true" class="btn btn-lg btn-success">Enter the Market</a></p>
-                    </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-ng-click="ok()">Ok, let&apos;s get started!</button>
+            </div>
 
-                    <div class="mastfoot">
-                        <div class="inner">
-                            <p>2014 - OpenBazaar <a href="http://openbazaar.org">http://openbazaar.org</a></p>
-                        </div>
+        </script>
+    </div>
+</div>
+
+<div class="container" style="min-height: 100%;">
+
+    <div style="overflow-y:auto; overflow-x: hidden; padding-bottom:100px">
+
+        <!-- Header -->
+        <div class="col-sm-12 clearfix" style="border-bottom:1px solid #bbb;padding:5px 0;">
+        <div id="header">
+
+            <!-- Logo -->
+            <div class="col-sm-4 col-xs-12" >
+                <a href="#/dashboard"><img src="img/logo_header.png" class="img-responsive" style="max-height:100px;" /></a>
+            </div>
+
+            <!-- Search and Navigation -->
+            <div class="col-sm-8 col-xs-12 search-area">
+
+                <div class="" style="padding-right:0">
+                        <form class="search-form2 form-inline" name="search" action="#/search">
+                            <div class="text-right" style="padding-right:0">
+                                <input class="form-control" size="60" name="searchterm" ng-model="searchterm" type="text" placeholder="Search for markets or products...">
+                                <input class="btn btn-primary" type="submit" value="Search">
+                            </div>
+                        </form>
+                </div>
+
+                <div class="row col-sm-12" style="padding-right:0">
+                    <div id="header-navigation">
+                        <ul class="nav nav-pills">
+                             <li><a href="#/dashboard">Home</a></li>
+                            <li class="dropdown"><a href="#orders" data-toggle="dropdown" class="dropdown-toggle">Orders <b class="caret"></b></a>
+                                <ul class="dropdown-menu" role="menu">
+                                    <li role="presentation"><a role="menuitem" tabindex="-1" href="#/orders/sales">My Sales</a></li>
+                                    <li role="presentation"><a role="menuitem" tabindex="-1" href="#/orders/purchases">My Purchases</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="#/contracts">Contracts</a></li>
+                            <li class="dropdown"><a href="#arbitration" data-toggle="dropdown" class="dropdown-toggle">Arbitration <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="#" data-ng-click="showDashboardPanel('arbitration')">My Cases</a></li>
+                                    <li><a href="#">Find Arbiters/Notaries</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="#messages" data-ng-click="showDashboardPanel('messages')">Messages <span data-ng-show="BMMessages" class="badge pull-right">1</span></a></li>
+                            <li><a href="#settings">Settings</a></li>
+                            <li><identicon icon-size="30" hash="myself.guid" title="{{myself.guid}}" ></identicon></li>
+                        </ul>
+
                     </div>
                 </div>
             </div>
-        </div><!-- /MOVE APP INSIDE THIS AREA -->
-
-        <div id="search" class="search-area" ng-show="started">
-            <div style="float:left;">
-                <h1>OpenBazaar</h1>
-            </div>
-
-            <div class="search-area panel panel-default" style="text-align:right;margin-left:275px">
-                <form class="search-form form-inline panel-body">
-                    <label class="sr-only" for="search">Search:</label> <input class="form-control" size="60" ng-model="search" type="text" placeholder="Search for nicknames.."> <input class="btn btn-success" ng-click="searchNickname()" type="submit" value="Search">
-                </form>
-            </div><!--
-<div class="row">
-  <div class="col-sm-8">
-      </div>
-  <div class="anon-profile-area col-sm-4">
-    
-  </div>
-</div>
--->
-
-            <div class="row">
-                <div class="col-sm-8">
-                    <div ng-show="page" class="panel panel-default">
-                    	<identicon icon-size="64" hash="page.pubkey" title="{{page.pubkey}}"></identicon> 
-                        <span id="store-nickname" style="font-weight:100;font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:24px;">{{page.nickname}}</span>
-
-                        <div class="panel-body" ng-show="page">
-                            
-                            <!-- Buy -->
-                            <button ng-click="creatingOrder=true" class="btn btn-success btn-xl navbar-btn">Buy Now</button>
-
-                            <form ng-show="creatingOrder">
-                                Text: <input class="form-control" type="text" ng-model="newOrder.text" placeholder="Friendly message"> <a class="btn btn-primary navbar-btn" ng-click="createOrder()" type="submit">Order</a> <a class="btn btn-warning navbar-btn" ng-click="creatingOrder=false" type="cancel">Cancel</a>
-                            </form>
 
 
+        </div>
+        </div>
 
-                            <h3 ng-show="Object.keys(orders).length">Orders</h3><!-- Orders -->
-                            
-                            
+        <div class="row">
+        <div id="dashboard-container" class="{{sidebar ? 'col-sm-8' : 'col-sm-12'}}">
 
-                            <div class='panel-body' ng-repeat="(orderId, order) in orders" ng-show="order.seller == page.pubkey || order.seller == myself.pubkey">
-                                {{order.id}} {{order.state}} {{order.text}} <!-- Buy -->
-                                 <!-- Pay -->
+            <div data-ng-show="dashboard" style="text-align:left">
 
-                                <form ng-show="order && order.state == 'accepted' && order.buyer == myself.pubkey">
-                                    Pay to: {{order.address}}<BR>Tx: <input class="form-control" type="text" ng-model="newOrder.tx" placeholder="Transaction with the spend"> <a class="btn btn-primary navbar-btn" ng-click="payOrder(order)" type="submit">Payed</a> <a class="btn btn-warning navbar-btn" ng-click="showReviewForm=false" type="cancel">Cancel</a>
-                                </form><!-- Sent -->
+                <div class="dashboard-panel">
+                    <div data-ng-view></div>
 
-                                <form ng-show="order && order.state == 'payed' && order.seller == myself.pubkey">
-                                    <a class="btn btn-primary navbar-btn" ng-click="sendOrder(order)" type="submit">Sent</a>
-                                </form><!-- Received -->
-
-                                <form ng-show="order && order.state == 'sent' && order.buyer == myself.pubkey">
-                                    <a class="btn btn-primary navbar-btn" ng-click="receiveOrder(order)" type="submit">Received</a>
-                                </form>
-                            </div>
-
-                            <div id="page-content"></div><!-- TODO: Pagination of comments -->
-
-                            <h3>Reviews</h3>
-
-                            <div ng-repeat="review in currentReviews.slice().reverse()" style="padding:3px;background-color:#333;margin-bottom:5px;">
-                                <table>
-                                    <tr>
-                                        <td><identicon icon-size="50" hash="review.pubkey" title="{{review.pubkey}}"></identicon></td>
-
-                                        <td>
-                                            <div style="word-wrap:break-word;width:600px;font-size:14px;">
-                                                <span style="color:#999;"><em>{{review.pubkey}}</em></span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <div>
-                                    <table>
-                                        <tr>
-                                            <td width="60" valign="top" style="font-size:200%">{{review.rating}}</td>
-
-                                            <td>"{{review.text}}"</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div><button ng-click="showReviewForm=true" ng-show="!showReviewForm" class="btn btn-default navbar-btn">Add Review</button>
-
-                            <form ng-show="showReviewForm">
-                                <div style="margin:20px 10px">
-                                    <h4>Add a Review</h4><select class="form-control" type="number" ng-model="review.rating" placeholder="Rating" style="width:10%;">
-                                        <option value="1">
-                                            1
-                                        </option>
-
-                                        <option value="2">
-                                            2
-                                        </option>
-
-                                        <option value="3">
-                                            3
-                                        </option>
-
-                                        <option value="4">
-                                            4
-                                        </option>
-
-                                        <option value="5">
-                                            5
-                                        </option>
-
-                                        <option value="6">
-                                            6
-                                        </option>
-
-                                        <option value="7">
-                                            7
-                                        </option>
-
-                                        <option value="8">
-                                            8
-                                        </option>
-
-                                        <option value="9">
-                                            9
-                                        </option>
-
-                                        <option value="10">
-                                            10
-                                        </option>
-                                    </select>
-
-                                    <div style="margin-top:5px">
-                                        <textarea class="form-control" ng-model="review.text" cols="50" id="new-review" name="comment" placeholder="Enter your review here..." rows="5">
-</textarea>
-                                    </div><a class="btn btn-default navbar-btn" ng-click="addReview()" type="submit">Submit</a> <a class="btn btn-default navbar-btn" ng-click="showReviewForm=false" type="cancel">Cancel</a>
-                                </div>
-                            </form>
-
-                            <div title="page.pubkey" style="word-wrap:break-word">
-                                <h2>Owner:</h2>{{page.pubkey}}
-                            </div>
-
-                            <div title="{{page.signature}}" style="word-wrap:break-word">
-                                <h2>Signature</h2>{{page.signature}}
-                            </div>
-                        </div>
-                    </div>
-                </div><!-- Right Col - Sidebar -->
-
-                <div class="shoutbox-area col-sm-4">
-                    <h3>My Store</h3>
-
-                    <table>
-                        <tr>
-                            <td width="64"><identicon icon-size="64" hash="myself.pubkey" title="{{myself.pubkey}}"></identicon></td>
-
-                            <td valign="top">
-                                Reputation:{{myself.reputation}} <br>
-
-                                <div title="{{myself.nickname}}">
-                                    {{myself.pubkey.slice(0,16)}}... {{myself.uri}}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <div class="reviews-area">
-                        <h4>Reviews</h4>
-
-                        <div ng-repeat="review in myself.reputation">
-                            [{{review.rating}}] {{review.text}}
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3>Shout</h3>
-
-                        <form class="form-inline">
-                            <input class="shout-input form-control" type="text" ng-model="newShout" placeholder="Say something anonymously"> <button ng-click="createShout(newShout)" class="btn btn-danger">Shout!</button>
-                        </form>
-
-                        <div class="shout-chats">
-                            <div ng-repeat="shout in shouts.slice().reverse()">
-                                {{shout.text}}
-                            </div>
-                        </div>
-                    </div>
-
-                    <h3>Markets</h3>
-
-                    <div class="peers-area" ng-repeat="peer in peers">
-                        <table class="peers-table">
-                            <tr>
-                                <td width="40"><identicon icon-size="38" hash="peer.pubkey" title="{{peer.pubkey}}"></identicon></td>
-
-                                <td><span title="{{peer.pubkey}}">{{peer.uri}}<br>
-                                <span style="font-style:italic;">{{peer.nickname ? peer.nickname : peer.pubkey?peer.pubkey.slice(0,20):'unknown'}}...</span></span></td>
-
-                                <td align="right"><button ng-click="queryShop(peer)" class="btn btn-sm btn-primary">Visit Shop</button></td>
-                            </tr>
-                        </table>
-                    </div>
                 </div>
             </div>
         </div>
-    </div><!-- container -->
+
+
+        <div id="sidebar" data-ng-show="sidebar" class="shoutbox-area col-sm-4" style="margin-top:20px;" >
+
+                <table class="peers-table no-hover" style="margin-top:20px;">
+
+            <tbody>
+            <tr>
+                <td width="40" style="vertical-align:top"><identicon icon-size="50" hash="myself.guid" title="{{myself.guid}}"></identicon></td>
+                <td style="font-size:14px;word-wrap:break-word;word-break:break-all"><span title="{{myself.pubkey}}"><strong>{{settings.nickname ? settings.nickname : 'Your Store'}}</strong><br>
+                    <span style="font-style:italic;font-size:12px">{{myself.nickname ? myself.nickname : myself.sin}}
+                        <!--<div data-ng-show="myself.uri">{{myself.uri}}</div>-->
+                        </span></span>
+                </td>
+
+
+            </tr>
+            </tbody>
+        </table>
+
+        <h3>Connected Markets</h3>
+
+        <div data-ng-show="peers.length < 1">There are no stores connected to you.</div>
+
+        <div class="peers-area" >
+            <table id="favorite-peers" class="peers-table table-hover">
+                <tbody>
+                <tr data-ng-repeat="peer in peers" data-ng-click="go('/user/'+peer.guid)">
+                    <td width="40" style="vertical-align:top"><identicon icon-size="50" hash="peer.guid" title="{{peer.guid}}"></identicon></td>
+                    <td style="font-size:14px;word-wrap:break-word;word-break:break-all"><strong><span title="{{peer.pubkey}}">{{peer.nick != "" ? peer.nick : peer.uri }}</strong><br>
+                      <span style="font-style:italic;font-size:12px">{{peer.nickname ? peer.nickname : peer.sin}}
+                        <!--<div data-ng-show="peer.uri">{{peer.uri}}</div>-->
+                        </span></span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+
+
+        <div style="width:100%">
+            <h3>Chat Stream</h3>
+
+
+            <form class="form" data-ng-submit="createShout(newShout)">
+                <input class="shout-input form-control" type="text" data-ng-model="newShout" placeholder="Type a message">
+            </form>
+
+            <div class="shout-chats">
+                <div data-ng-repeat="shout in shouts.slice().reverse()" style="padding-bottom:5px;">
+                    <div><identicon icon-size="25" hash="shout.senderGUID" title="{{shout.senderGUID}}" style="float:left;margin-right:10px;"></identicon></div><div>{{shout.text}}</div>
+                </div>
+            </div>
+        </div>
+
+        </div>
+
+    </div>
+
+    </div>
+
+</div>
+
+
+<div class="navbar navbar-fixed-bottom">
+    <strong>OpenBazaar</strong> &middot; <a href="https://openbazaar.org" target="_blank">Website</a> &middot; <a href="https://blog.openbazaar.org" target="_blank">Blog</a> &middot;
+    <a href="http://forum.openbazaar.org" target="_blank">Forum</a> &middot; <a href="bitcoin:16uniUFpbhrAxAWMZ9qEkcT9Wf34ETB4Tt?label=OpenBazaar%20Donation">16uniUFpbhrAxAWMZ9qEkcT9Wf34ETB4Tt</a>
+</div>
 </body>
 </html>

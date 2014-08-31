@@ -1,76 +1,139 @@
-
-
-def hello(data):
-    data['type'] = 'hello'
+def hello_request(data):
+    data['type'] = 'hello_request'
     return data
+
+
+def hello_response(data):
+    data['type'] = 'hello_reply'
+    return data
+
+
+def goodbye(data):
+    data['type'] = 'goodbye'
+    return data
+
 
 def ok():
     return {'type': 'ok'}
+
 
 def shout(data):
     data['type'] = 'shout'
     return data
 
+
+def proto_welcome():
+    return {'type': 'welcome'}
+
+
 def proto_reputation(pubkey, reviews):
-    data = {}
-    data['type'] = 'reputation'
-    data['pubkey'] = pubkey.encode('hex')
-    data['reviews'] = reviews
+    data = {
+        'type': 'reputation',
+        'pubkey': pubkey.encode('hex'),
+        'reviews': reviews
+    }
     return data
+
 
 def proto_query_reputation(pubkey):
-    data = {}
-    data['type'] = 'query_reputation'
-    data['pubkey'] = pubkey.encode('hex')
+    data = {
+        'type': 'query_reputation',
+        'pubkey': pubkey.encode('hex')
+    }
     return data
 
-def proto_page(pubkey, text, signature, nickname):
-    data = {}
-    data['type'] = 'page'
-    data['pubkey'] = pubkey.encode('hex')
-    data['signature'] = signature.encode('hex')
-    data['text'] = text
-    data['nickname'] = nickname
+
+def proto_page(uri, pubkey, guid, text, signature, nickname, PGPPubKey, email,
+               bitmessage, arbiter, notary, arbiter_description, sin):
+    data = {
+        'type': 'page',
+        'uri': uri,
+        'pubkey': pubkey,
+        'senderGUID': guid,
+        'text': text,
+        'nickname': nickname,
+        'PGPPubKey': PGPPubKey,
+        'email': email,
+        'bitmessage': bitmessage,
+        'arbiter': arbiter,
+        'notary': notary,
+        'arbiter_description': arbiter_description,
+        'sin': sin
+    }
     return data
 
-def query_page(pubkey):
-    data = {}
-    data['type'] = 'query_page'
-    data['pubkey'] = pubkey.encode('hex')
+
+def query_page(guid):
+    data = {'type': 'query_page', 'findGUID': guid}
     return data
 
-def order(id, buyer, seller, state, text, escrows=[], tx=None):
-    data = {}
-    data['type'] = 'order'
-    data['id'] = id
+
+def order(id, buyer, seller, state, text, escrows=None, tx=None):
+    if not escrows:
+        escrows = []
+    data = {
+        'type': 'order',
+        'order_id': id,
+        'buyer': buyer.encode('hex'),
+        'seller': seller.encode('hex'),
+        'escrows': escrows
+    }
     # this is who signs
-    data['buyer'] = buyer.encode('hex')
     # this is who the review is about
-    data['seller'] = seller.encode('hex')
     # the signature
-    data['escrows'] = escrows
     # the signature
     if data.get('tex'):
         data['tx'] = tx.encode('hex')
     # some text
     data['text'] = text
     # some text
-    data['state'] = state # new -> accepted/rejected -> payed -> sent -> received
+    data['address'] = ''
+    data['state'] = state
+    # new -> accepted/rejected -> payed -> sent -> received
+    return data
+
+
+def proto_listing(productTitle, productDescription, productPrice,
+                  productQuantity, market_id, productShippingPrice,
+                  productImageName, productImageData):
+    data = {
+        'productTitle': productTitle,
+        'productDescription': productDescription,
+        'productPrice': productPrice,
+        'productQuantity': productQuantity,
+        'market_id': market_id,
+        'productShippingPrice': productShippingPrice,
+        'productImageName': productImageName,
+        'productImageData': productImageData
+    }
+    return data
+
+
+def proto_store(key, value, originalPublisherID, age):
+    data = {
+        'type': 'store',
+        'key': key,
+        'value': value,
+        'originalPublisherID': originalPublisherID,
+        'age': age
+    }
     return data
 
 
 def negotiate_pubkey(nickname, ident_pubkey):
-    data = {}
-    data['type'] = 'negotiate_pubkey'
-    data['nickname'] = nickname
-    data['ident_pubkey'] = ident_pubkey.encode("hex")
+    data = {
+        'type': 'negotiate_pubkey',
+        'nickname': nickname,
+        'ident_pubkey': ident_pubkey.encode("hex")
+    }
     return data
+
 
 def proto_response_pubkey(nickname, pubkey, signature):
-    data = {}
-    data['type'] = "proto_response_pubkey"
-    data['nickname'] = nickname
-    data['pubkey'] = pubkey.encode("hex")
-    data['signature'] = signature.encode("hex")
+    data = {
+        'type': "proto_response_pubkey",
+        'nickname': nickname,
+        'pubkey': pubkey.encode("hex"),
+        'signature': signature.encode("hex")
+    }
     return data
-
